@@ -70,7 +70,7 @@ docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_
       - queries/    → reusable analytical queries
       - views/      → persistent analytical views
 - data/
-      - nfl_pbp_sample.csv  → small real-like dataset (10 plays)
+-         nfl_pbp_sample.csv  → small real-like dataset (10 plays)
 - docker-compose.yml   → container setup for Postgres + Adminer
 - README.md            → project documentation
 
