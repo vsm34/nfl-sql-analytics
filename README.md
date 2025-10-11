@@ -61,56 +61,55 @@ docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_
 ```
 
 # 🧱 Project Structure
-sql/
-  schema/        → base tables (seasons, teams, games, plays)
-  staging/       → raw data tables for CSV ingestion
-  etl/           → staging → core transformations
-  migrations/    → schema upgrades (FKs, indexes)
-  analysis/
-    queries/     → reusable analytical queries
-    views/       → persistent analytical views
-data/
-  nfl_pbp_sample.csv  → small real-like dataset (10 plays)
-docker-compose.yml   → container setup for Postgres + Adminer
-README.md            → project documentation
+- sql/
+  -  schema/        → base tables (seasons, teams, games, plays)
+  -  staging/       → raw data tables for CSV ingestion
+  -  etl/           → staging → core transformations
+  -  migrations/    → schema upgrades (FKs, indexes)
+  -  analysis/
+      - queries/    → reusable analytical queries
+      - views/      → persistent analytical views
+- data/
+      - nfl_pbp_sample.csv  → small real-like dataset (10 plays)
+- docker-compose.yml   → container setup for Postgres + Adminer
+- README.md            → project documentation
 
 # 📊 Example Outputs
 
 Average yards per play by offense:
 
-team_abbr	 ypp	 plays
-KC	      8.20	  5
-DAL	      4.80	  5
+- team_abbr	 ypp	 plays
+-  KC	      8.20	    5
+-  DAL	    4.80	    5
 
 Success rate by down:
 
-down	success_rate	plays
-1	        0.000	      2
-2	        0.500	      2
-3	        0.800	      5
-4	        0.000	      1
+- down	success_rate	plays
+-  1	        0.000	    2
+-  2 	        0.500	    2
+-  3 	        0.800	    5
+-  4 	        0.000	    1
 
 # 🧠 Key Features
 
-🧩 Normalized Schema – professional ER model (seasons, teams, games, plays)
-⚙️ ETL Pipeline – staging → core workflow using SQL scripts
-🐳 Dockerized Setup – portable environment with PostgreSQL & Adminer
-📈 Analytical Views – vw_offense_ypp, vw_success_by_down
-⚡ Performance Indexes – faster lookups on high-usage columns
-💻 Adminer UI – accessible at http://localhost:8080
-📚 Fully Scripted & Reproducible – every step version-controlled
+- 🧩 Normalized Schema – professional ER model (seasons, teams, games, plays)
+- ⚙️ ETL Pipeline – staging → core workflow using SQL scripts
+- 🐳 Dockerized Setup – portable environment with PostgreSQL & Adminer
+- 📈 Analytical Views – vw_offense_ypp, vw_success_by_down
+- ⚡ Performance Indexes – faster lookups on high-usage columns
+- 💻 Adminer UI – accessible at http://localhost:8080
+- 📚 Fully Scripted & Reproducible – every step version-controlled
 
 
 # 🖥️ Accessing the Database
 
-Adminer Login
-
-Field	    Value
-System	PostgreSQL
-Server	    db
-Username	postgres
-Password	postgres
-Database	nfl
+- Adminer Login
+- Field	    Value
+- System	PostgreSQL
+- Server	    db
+- Username	postgres
+- Password	postgres
+- Database	nfl
 
 Command Line
 ```bash
@@ -119,20 +118,21 @@ docker compose exec db psql -U postgres -d nfl
 # 🔧 Performance & Indexes
 
 Indexes added in 05_perf_indexes.sql accelerate joins and aggregations:
-plays(game_id)
-plays(offense_team_id)
-plays(defense_team_id)
-plays(down)
-games(season_id, week)
-teams(team_abbr)
+
+- plays(game_id)
+- plays(offense_team_id)
+- plays(defense_team_id)
+- plays(down)
+- games(season_id, week)
+- teams(team_abbr)
 
 # 📈 Future Enhancements (Planned)
 
-Load full 2024–2025 play-by-play data via Kaggle or nfl_data_py
-Automate data refresh with a Python ETL script
-Add advanced metrics (EPA, success splits, 3rd-down efficiency)
-Visualization layer in Tableau or Power BI
-Adminer screenshots and query examples in docs
+- Load full 2024–2025 play-by-play data via Kaggle or nfl_data_py
+- Automate data refresh with a Python ETL script
+- Add advanced metrics (EPA, success splits, 3rd-down efficiency)
+- Visualization layer in Tableau or Power BI
+- Adminer screenshots and query examples in docs
 
 # 🏁 How to Stop & Restart
 
@@ -147,4 +147,3 @@ docker compose down -v
 Restart later:
 ```bash
 docker compose up -d
----
