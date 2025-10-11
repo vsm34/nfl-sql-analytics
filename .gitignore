@@ -1,0 +1,14 @@
+# Node, Python, OS cruft
+.DS_Store
+__pycache__/
+.env
+.env.local
+*.pyc
+
+# Docker artifacts
+*.log
+*/.tmp
+
+# Data
+data/*.csv
+data/*.parquet
