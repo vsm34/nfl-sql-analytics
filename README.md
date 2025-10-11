@@ -78,9 +78,9 @@ docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_
 
 Average yards per play by offense:
 
-- team_abbr	 ypp	 plays
--  KC	      8.20	    5
--  DAL	    4.80	    5
+- team_abbr	       ypp	 plays
+-  KC	             8.20	    5
+-  DAL	           4.80	    5
 
 Success rate by down:
 
