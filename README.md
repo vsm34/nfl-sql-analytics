@@ -1,70 +1,150 @@
-# NFL SQL Analytics (PostgreSQL)
+# 🏈 NFL SQL Analytics  
 
-A portfolio-ready SQL project that models NFL seasons, games, plays, teams, and players in **PostgreSQL**, with ready-to-run Docker, schema scripts, and example queries.
-
-## What this project demonstrates
-- Sound relational modeling (star-ish schema with bridges for many-to-many).
-- Clean SQL: primary/foreign keys, constraints, indexes, and views.
-- Real analytics examples (EPA/success placeholders you can extend later).
-
-## Quick Start (Beginner-Friendly)
-### 1) Prereqs
-- **Git** installed and a GitHub account.
-- **Docker Desktop** installed and running (or a local PostgreSQL if you prefer).
-- **VS Code** with the “PostgreSQL” or “SQLTools” extension (optional but handy).
-
-### 2) Set environment values
-Copy `.env.example` → `.env` and adjust as needed:
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=nfl
-```
-
-### 3) Launch PostgreSQL
-```bash
-docker compose up -d
-# Postgres on localhost:5432, Adminer on http://localhost:8080
-```
-
-### 4) Load the schema
-Run from repo root:
-```bash
-# Using docker exec into the Postgres container and psql the scripts in order
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/schema/00_extensions.sql
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/schema/01_dimensions.sql
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/schema/02_games.sql
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/schema/03_plays.sql
-```
-
-Or, connect via Adminer (http://localhost:8080), log in to `nfl`, and run each script manually.
-
-### 5) Try sample queries
-```bash
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/analysis/queries/demo.sql
-```
+![Built with Docker](https://img.shields.io/badge/Built%20with-Docker-blue?logo=docker)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue?logo=postgresql)
+![SQL Analytics](https://img.shields.io/badge/Language-SQL-orange?logo=sqlite)
+![Status](https://img.shields.io/badge/Version-v1.0-success)
 
 ---
 
-## Project Structure
+## 📘 Overview  
+
+**NFL SQL Analytics** is a containerized data-engineering and analytics project built with **PostgreSQL**, **Docker**, and **Adminer**.  
+It models professional football play-by-play data using a clean, normalized schema and demonstrates a full ETL (Extract-Transform-Load) pipeline — from raw CSV ingestion to analytical views.  
+
+This project mirrors how a real data team structures an analytics database:  
+
+- **Staging layer** for raw data  
+- **Core layer** for cleaned relational tables  
+- **Views and indexes** for performance and reporting  
+- **Adminer UI** for easy data exploration  
+
+---
+
+
+
+## 🚀 Quick Start  
+
+### 1️⃣ Start the containers 
+```bash 
+docker compose up -d 
 ```
-sql/
-  schema/
-    00_extensions.sql
-    01_dimensions.sql
-    02_games.sql
-    03_plays.sql
-  analysis/
-    queries/
-      demo.sql
-data/              # put sample CSVs here later
-docs/
-  ERD.md           # Mermaid ERD
-.env.example
-docker-compose.yml
-README.md
+### 2️⃣ Create the schema
+
+Run these once to build all base tables:
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/schema/00_extensions.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/schema/01_dimensions.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/schema/02_games.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/schema/03_plays.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/migrations/04_add_off_def.sql
+```
+### 3️⃣ Load sample data (10 plays from 2023)
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/staging/00_create_staging.sql
+docker compose exec db psql -U postgres -d nfl -c "\copy staging.pbp_raw FROM '/sql/staging/nfl_pbp_sample.csv' CSV HEADER"
+docker compose exec db psql -U postgres -d nfl -f /sql/etl/21_stage_to_core_offdef.sql
+```
+### 4️⃣ Add performance indexes
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/migrations/05_perf_indexes.sql
+```
+### 5️⃣ Create analytical views
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/analysis/views/vw_offense_ypp.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/analysis/views/vw_success_by_down.sql
+```
+### 6️⃣ Run example queries
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/ypp_by_offense.sql
+docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_rate_by_down.sql
 ```
 
-## Next steps
-- Add CSV loaders (Python or \\copy), indexes for performance, and derived analytical views.
-- Bring in a public NFL play-by-play dataset and map its columns into this schema.
+# 🧱 Project Structure
+sql/
+  schema/        → base tables (seasons, teams, games, plays)
+  staging/       → raw data tables for CSV ingestion
+  etl/           → staging → core transformations
+  migrations/    → schema upgrades (FKs, indexes)
+  analysis/
+    queries/     → reusable analytical queries
+    views/       → persistent analytical views
+data/
+  nfl_pbp_sample.csv  → small real-like dataset (10 plays)
+docker-compose.yml   → container setup for Postgres + Adminer
+README.md            → project documentation
+
+# 📊 Example Outputs
+
+Average yards per play by offense:
+
+team_abbr	 ypp	 plays
+KC	      8.20	  5
+DAL	      4.80	  5
+
+Success rate by down:
+
+down	success_rate	plays
+1	        0.000	      2
+2	        0.500	      2
+3	        0.800	      5
+4	        0.000	      1
+
+# 🧠 Key Features
+
+🧩 Normalized Schema – professional ER model (seasons, teams, games, plays)
+⚙️ ETL Pipeline – staging → core workflow using SQL scripts
+🐳 Dockerized Setup – portable environment with PostgreSQL & Adminer
+📈 Analytical Views – vw_offense_ypp, vw_success_by_down
+⚡ Performance Indexes – faster lookups on high-usage columns
+💻 Adminer UI – accessible at http://localhost:8080
+📚 Fully Scripted & Reproducible – every step version-controlled
+
+
+# 🖥️ Accessing the Database
+
+Adminer Login
+
+Field	    Value
+System	PostgreSQL
+Server	    db
+Username	postgres
+Password	postgres
+Database	nfl
+
+Command Line
+```bash
+docker compose exec db psql -U postgres -d nfl
+```
+# 🔧 Performance & Indexes
+
+Indexes added in 05_perf_indexes.sql accelerate joins and aggregations:
+plays(game_id)
+plays(offense_team_id)
+plays(defense_team_id)
+plays(down)
+games(season_id, week)
+teams(team_abbr)
+
+# 📈 Future Enhancements (Planned)
+
+Load full 2024–2025 play-by-play data via Kaggle or nfl_data_py
+Automate data refresh with a Python ETL script
+Add advanced metrics (EPA, success splits, 3rd-down efficiency)
+Visualization layer in Tableau or Power BI
+Adminer screenshots and query examples in docs
+
+# 🏁 How to Stop & Restart
+
+Stop containers (keep data):
+```bash
+docker compose down
+```
+Stop & delete data (fresh start):
+```bash
+docker compose down -v
+```
+Restart later:
+```bash
+docker compose up -d
+---
