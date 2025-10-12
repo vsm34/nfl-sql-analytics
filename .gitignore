@@ -10,5 +10,5 @@ __pycache__/
 */.tmp
 
 # Data
-data/*.csv
-data/*.parquet
+/data/*
+!data/.gitkeep

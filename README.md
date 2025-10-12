@@ -60,6 +60,26 @@ docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/ypp_by_o
 docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_rate_by_down.sql
 ```
 
+### Load 2024 PBP (nfl_data_py)
+```bash
+# venv (Windows)
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -U pip
+pip install "pandas==2.2.2" "nfl_data_py>=0.3.0,<0.4"
+```
+download and write CSV to ./data
+``` bash
+python etl\python\download_pbp_subset.py 2024 2025  # 2025 skips if not published
+```
+load -> staging -> core
+```bash
+docker compose exec db psql -U postgres -d nfl -f /sql/staging/00_create_staging.sql
+docker compose exec db psql -U postgres -d nfl -c "\copy staging.pbp_raw FROM '/data/pbp_2024_2025_subset.csv' CSV HEADER"
+docker compose exec db psql -U postgres -d nfl -c "TRUNCATE plays RESTART IDENTITY CASCADE;"
+docker compose exec db psql -U postgres -d nfl -f /sql/etl/21_stage_to_core_offdef.sql
+```
+
 # 🧱 Project Structure
 - sql/
   -  schema/        → base tables (seasons, teams, games, plays)
@@ -115,6 +135,7 @@ Command Line
 ```bash
 docker compose exec db psql -U postgres -d nfl
 ```
+
 # 🔧 Performance & Indexes
 
 Indexes added in 05_perf_indexes.sql accelerate joins and aggregations:
@@ -127,8 +148,6 @@ Indexes added in 05_perf_indexes.sql accelerate joins and aggregations:
 - teams(team_abbr)
 
 # 📈 Future Enhancements (Planned)
-
-- Load full 2024–2025 play-by-play data via Kaggle or nfl_data_py
 - Automate data refresh with a Python ETL script
 - Add advanced metrics (EPA, success splits, 3rd-down efficiency)
 - Visualization layer in Tableau or Power BI
