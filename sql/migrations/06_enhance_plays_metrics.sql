@@ -1,0 +1,16 @@
+-- Add analytics columns to plays (idempotent)
+ALTER TABLE plays
+  ADD COLUMN IF NOT EXISTS epa NUMERIC,
+  ADD COLUMN IF NOT EXISTS third_down BOOLEAN,
+  ADD COLUMN IF NOT EXISTS third_down_success BOOLEAN,
+  ADD COLUMN IF NOT EXISTS turnover BOOLEAN,
+  ADD COLUMN IF NOT EXISTS dropback BOOLEAN,
+  ADD COLUMN IF NOT EXISTS explosive BOOLEAN,
+  ADD COLUMN IF NOT EXISTS red_zone_play BOOLEAN,
+  ADD COLUMN IF NOT EXISTS first_down BOOLEAN,        -- keep in core for conversion views
+  ADD COLUMN IF NOT EXISTS play_action BOOLEAN,
+  ADD COLUMN IF NOT EXISTS sack BOOLEAN,
+  ADD COLUMN IF NOT EXISTS qb_hit BOOLEAN,
+  ADD COLUMN IF NOT EXISTS punt BOOLEAN,
+  ADD COLUMN IF NOT EXISTS penalty BOOLEAN,
+  ADD COLUMN IF NOT EXISTS penalty_yards INT;
