@@ -1,19 +1,24 @@
+-- 21_stage_to_core_offdef
 -- Seasons
 INSERT INTO seasons(year)
 SELECT DISTINCT season
 FROM staging.pbp_raw s
 WHERE NOT EXISTS (SELECT 1 FROM seasons x WHERE x.year = s.season);
 
--- Teams
-INSERT INTO teams (team_abbr, team_name, conference, division)
-SELECT DISTINCT abbr, abbr, NULL, NULL
-FROM (
-  SELECT home_team AS abbr FROM staging.pbp_raw
-  UNION SELECT away_team FROM staging.pbp_raw
-  UNION SELECT posteam    FROM staging.pbp_raw
-  UNION SELECT defteam    FROM staging.pbp_raw
-) u
-WHERE NOT EXISTS (SELECT 1 FROM teams t WHERE t.team_abbr = u.abbr);
+-- Teams (null/blank-safe) — fill team_name = team_abbr
+WITH abbrs AS (
+  SELECT home_team AS abbr FROM staging.pbp_raw WHERE home_team IS NOT NULL AND home_team <> ''
+  UNION SELECT away_team        FROM staging.pbp_raw WHERE away_team IS NOT NULL AND away_team <> ''
+  UNION SELECT posteam          FROM staging.pbp_raw WHERE posteam    IS NOT NULL AND posteam    <> ''
+  UNION SELECT defteam          FROM staging.pbp_raw WHERE defteam    IS NOT NULL AND defteam    <> ''
+)
+INSERT INTO teams (team_abbr, team_name)
+SELECT DISTINCT abbr, abbr
+FROM abbrs
+ON CONFLICT (team_abbr) DO NOTHING;
+
+
+
 
 -- Games
 INSERT INTO games (season_id, week, gameday, home_team_id, away_team_id)
@@ -27,7 +32,8 @@ JOIN teams th  ON th.team_abbr = r.home_team
 JOIN teams ta  ON ta.team_abbr = r.away_team
 ON CONFLICT (season_id, week, home_team_id, away_team_id) DO NOTHING;
 
--- Plays with offense/defense team IDs
+
+
 INSERT INTO plays (
   game_id, quarter, down, distance, play_type, yards_gained,
   success, penalty_flag, offense_team_id, defense_team_id
