@@ -14,10 +14,12 @@ It models professional football play-by-play data using a clean, normalized sche
 
 This project mirrors how a real data team structures an analytics database:  
 
-- **Staging layer** for raw data  
-- **Core layer** for cleaned relational tables  
-- **Views and indexes** for performance and reporting  
-- **Adminer UI** for easy data exploration  
+- **Staging → Core ETL** from `nfl_data_py` CSVs
+- **Enriched plays** (EPA, explosive, turnover, dropback, red-zone, penalties, sack/pressure flags)
+- **Analytics views** (team/league): YPP, EPA/play, turnover rate, third-down %, red-zone TD%, explosive rate, penalty yards (off/def), pressure/sack rate, punts per game, yards/game by season
+- **Materialized views** for heavier rollups (optional)
+- **One-command pipeline** via Makefile or PowerShell script
+- **Adminer UI** for SQL browsing at `http://localhost:8080`
 
 ---
 
@@ -30,34 +32,39 @@ This project mirrors how a real data team structures an analytics database:
 docker compose up -d 
 ```
 ### 2️⃣ Create the schema
+```bash
+make schema
+```
+```bash
+make seed_meta
+```
 
-Run these once to build all base tables:
+### 3️⃣ Downlaod Data (2022-2023 Season)
 ```bash
-docker compose exec db psql -U postgres -d nfl -f /sql/schema/00_extensions.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/schema/01_dimensions.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/schema/02_games.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/schema/03_plays.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/migrations/04_add_off_def.sql
+python etl/python/download_pbp_subset.py 2022 2023
 ```
-### 3️⃣ Load sample data (10 plays from 2023)
+### 4️⃣ Load --> ETL --> Views --> QA
 ```bash
-docker compose exec db psql -U postgres -d nfl -f /sql/staging/00_create_staging.sql
-docker compose exec db psql -U postgres -d nfl -c "\copy staging.pbp_raw FROM '/sql/staging/nfl_pbp_sample.csv' CSV HEADER"
-docker compose exec db psql -U postgres -d nfl -f /sql/etl/21_stage_to_core_offdef.sql
+make load_staging CSV=data/pbp_2022_2023_subset.csv
+make etl_core
+make etl_metrics
+make views
 ```
-### 4️⃣ Add performance indexes
+### 5️⃣ optional materialized views
 ```bash
-docker compose exec db psql -U postgres -d nfl -f /sql/migrations/05_perf_indexes.sql
+make mviews
+make refresh_mviews
+make qa
 ```
-### 5️⃣ Create analytical views
+
+##  One Command Pipeline
 ```bash
-docker compose exec db psql -U postgres -d nfl -f /sql/analysis/views/vw_offense_ypp.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/analysis/views/vw_success_by_down.sql
+make all YEARS="2022 2023" CSV=data/pbp_2022_2023_subset.csv
 ```
-### 6️⃣ Run example queries
+
+## One-Button Pipeline
 ```bash
-docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/ypp_by_offense.sql
-docker compose exec db psql -U postgres -d nfl -f /sql/analysis/queries/success_rate_by_down.sql
+.\scripts\run_pipeline.ps1 -StartYear 2022 -EndYear 2023
 ```
 
 ### Load 2024 PBP (nfl_data_py)
@@ -89,69 +96,20 @@ docker compose exec db psql -U postgres -d nfl -f /sql/etl/21_stage_to_core_offd
   -  analysis/
       - queries/    → reusable analytical queries
       - views/      → persistent analytical views
-- data/
-   - nfl_pbp_sample.csv  → small real-like dataset (10 plays)
+      - qa_checks.sql → consistency checks
+- etl/
+   - python/download_pbp_subset.py
+- app/
+   - app.py → streamlit dashboard
+   - requirements.txt
+- scripts/
+   - run_pipeline.ps1 → one button pipeline 
+- .github/workflows/
+   - ci.yml  → smoke checks 
+- data/      → Download CSVs (gitignored)
+- Makefile
 - docker-compose.yml   → container setup for Postgres + Adminer
 - README.md            → project documentation
-
-# 📊 Example Outputs
-
-Average yards per play by offense:
-
-- team_abbr	       ypp	 plays
--  KC	             8.20	    5
--  DAL	           4.80	    5
-
-Success rate by down:
-
-- down	success_rate	plays
--  1	        0.000	    2
--  2 	        0.500	    2
--  3 	        0.800	    5
--  4 	        0.000	    1
-
-# 🧠 Key Features
-
-- 🧩 Normalized Schema – professional ER model (seasons, teams, games, plays)
-- ⚙️ ETL Pipeline – staging → core workflow using SQL scripts
-- 🐳 Dockerized Setup – portable environment with PostgreSQL & Adminer
-- 📈 Analytical Views – vw_offense_ypp, vw_success_by_down
-- ⚡ Performance Indexes – faster lookups on high-usage columns
-- 💻 Adminer UI – accessible at http://localhost:8080
-- 📚 Fully Scripted & Reproducible – every step version-controlled
-
-
-# 🖥️ Accessing the Database
-
-- Adminer Login
-- Field	    Value
-- System	PostgreSQL
-- Server	    db
-- Username	postgres
-- Password	postgres
-- Database	nfl
-
-Command Line
-```bash
-docker compose exec db psql -U postgres -d nfl
-```
-
-# 🔧 Performance & Indexes
-
-Indexes added in 05_perf_indexes.sql accelerate joins and aggregations:
-
-- plays(game_id)
-- plays(offense_team_id)
-- plays(defense_team_id)
-- plays(down)
-- games(season_id, week)
-- teams(team_abbr)
-
-# 📈 Future Enhancements (Planned)
-- Automate data refresh with a Python ETL script
-- Add advanced metrics (EPA, success splits, 3rd-down efficiency)
-- Visualization layer in Tableau or Power BI
-- Adminer screenshots and query examples in docs
 
 # 🏁 How to Stop & Restart
 
@@ -163,6 +121,20 @@ Stop & delete data (fresh start):
 ```bash
 docker compose down -v
 ```
-Restart later:
+Restart later
 ```bash
-docker compose up -d
+make schema seed_meta
+python etl/python/download_pbp_subset.py 2022 2023
+make load_staging CSV=data/pbp_2022_2023_subset.csv
+make etl_core etl_metrics views mviews refresh_mviews qa
+```
+
+# 🧠 Key Features
+
+- 🧩 Normalized Schema – professional ER model (seasons, teams, games, plays)
+- ⚙️ ETL Pipeline – staging → core workflow using SQL scripts
+- 🐳 Dockerized Setup – portable environment with PostgreSQL & Adminer
+- 📈 Analytical Views – vw_offense_ypp, vw_success_by_down
+- ⚡ Performance Indexes – faster lookups on high-usage columns
+- 💻 Adminer UI – accessible at http://localhost:8080
+- 📚 Fully Scripted & Reproducible – every step version-controlled
