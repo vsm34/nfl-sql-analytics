@@ -38,7 +38,6 @@ make schema
 ```bash
 make seed_meta
 ```
-
 ### 3️⃣ Downlaod Data (2022-2023 Season)
 ```bash
 python etl/python/download_pbp_subset.py 2022 2023
@@ -104,8 +103,6 @@ docker compose exec db psql -U postgres -d nfl -f /sql/etl/21_stage_to_core_offd
    - requirements.txt
 - scripts/
    - run_pipeline.ps1 → one button pipeline 
-- .github/workflows/
-   - ci.yml  → smoke checks 
 - data/      → Download CSVs (gitignored)
 - Makefile
 - docker-compose.yml   → container setup for Postgres + Adminer
